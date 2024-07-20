@@ -186,10 +186,29 @@ fn main_wrapper(cli: Cli) -> Result<()> {
     Ok(())
 }
 
+struct CleanUp {
+    pub hook: fn() -> ()
+}
+
+impl CleanUp {
+    fn new(hook: fn() -> ()) -> Self {
+        CleanUp { hook }
+    }
+}
+
+impl Drop for CleanUp {
+    fn drop(&mut self) {
+        (self.hook)();
+    }
+}
+
+fn show_cursor() {
+    Term::stdout().show_cursor().unwrap();
+}
+
 fn main() {
-    ctrlc::set_handler(|| {
-        Term::stdout().show_cursor().unwrap();
-    }).unwrap();
+    let _clean_up = CleanUp::new(show_cursor);
+    ctrlc::set_handler(show_cursor).unwrap();
 
     let cli = Cli::parse();
     let debug_mode = cli.debug;
